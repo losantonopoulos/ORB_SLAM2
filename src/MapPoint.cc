@@ -18,6 +18,9 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <unistd.h>
+
+
 #include "MapPoint.h"
 #include "ORBmatcher.h"
 

@@ -18,6 +18,8 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <unistd.h>
+
 #include "Initializer.h"
 
 #include "Thirdparty/DBoW2/DUtils/Random.h"

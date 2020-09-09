@@ -48,6 +48,9 @@
 *   either expressed or implied, of the FreeBSD Project
 */
 
+#include <unistd.h>
+
+
 #include <iostream>
 
 #include "PnPsolver.h"
