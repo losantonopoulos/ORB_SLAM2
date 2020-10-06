@@ -42,6 +42,7 @@ find_package(Boost REQUIRED system)
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(tf2 REQUIRED)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -95,6 +96,15 @@ src/ros_rgbd.cc
 )
 
 target_link_libraries(RGBD
+${LIBS}
+)
+
+# Node for RGB-D Navigation
+rosbuild_add_executable(RGBD_NAV
+src/ros_rgbd_nav.cc
+)
+
+target_link_libraries(RGBD_NAV
 ${LIBS}
 )
 

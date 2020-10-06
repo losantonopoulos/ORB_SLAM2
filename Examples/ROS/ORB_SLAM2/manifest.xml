@@ -8,6 +8,7 @@
   <license>GPLv3</license>
   <depend package="roscpp"/>
   <depend package="tf"/>
+  <depend package="tf2"/>
   <depend package="sensor_msgs"/>
   <depend package="image_transport"/>
   <depend package="cv_bridge"/>

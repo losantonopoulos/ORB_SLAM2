@@ -205,6 +205,41 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
     return mCurrentFrame.mTcw.clone();
 }
 
+cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const cv::Mat &curPose, const double &timestamp)
+{
+    mImGray = imRGB;
+    cv::Mat imDepth = imD;
+
+    if(mImGray.channels()==3)
+    {
+        if(mbRGB)
+            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+        else
+            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
+    }
+    else if(mImGray.channels()==4)
+    {
+        if(mbRGB)
+            cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
+        else
+            cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
+    }
+
+    if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
+        imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
+
+    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+    
+
+    mInitPose = curPose.clone();
+
+   if (mInitPose.rows == 4 && mInitPose.cols == 4) mPoseInitialized = true;
+
+    Track();
+
+    return mCurrentFrame.mTcw.clone();
+}
+
 
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
 {
@@ -267,7 +302,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 }
 
 void Tracking::Track()
-{
+{    
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -280,10 +315,12 @@ void Tracking::Track()
 
     if(mState==NOT_INITIALIZED)
     {
-        if(mSensor==System::STEREO || mSensor==System::RGBD)
+        if(mSensor==System::STEREO || mSensor==System::RGBD){
+    
             StereoInitialization();
-        else
+        }else{
             MonocularInitialization();
+        }
 
         mpFrameDrawer->Update(this);
 
@@ -507,13 +544,57 @@ void Tracking::Track()
 
 }
 
+// Print Pose Matrix
+void Tracking::PrintPose(cv::Mat &curpose)
+{
+    if (curpose.rows == 4 && curpose.cols == 4) {
+
+        std::cout << "Pose:" << 
+        "\n" << curpose.at<float>(0, 0) << ", " << curpose.at<float>(0, 1) << ", " << curpose.at<float>(0, 2) << ", " << curpose.at<float>(0, 3) <<
+        "\n" << curpose.at<float>(1, 0) << ", " << curpose.at<float>(1, 1) << ", " << curpose.at<float>(1, 2) << ", " << curpose.at<float>(1, 3) <<
+        "\n" << curpose.at<float>(2, 0) << ", " << curpose.at<float>(2, 1) << ", " << curpose.at<float>(2, 2) << ", " << curpose.at<float>(2, 3) <<
+        "\n" << curpose.at<float>(3, 0) << ", " << curpose.at<float>(3, 1) << ", " << curpose.at<float>(3, 2) << ", " << curpose.at<float>(3, 3) << std::endl;  
+    }
+
+    
+    return;
+}
 
 void Tracking::StereoInitialization()
 {
-    if(mCurrentFrame.N>500)
-    {
-        // Set Frame pose to the origin
-        mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+    if(mCurrentFrame.N>500) {
+
+        if(mPoseInitialized){
+
+            if (mInitPose.rows == 4 && mInitPose.cols == 4) {
+
+                Tracking::PrintPose(mInitPose);
+                
+                // Set initial pose
+                mCurrentFrame.SetPose(mInitPose);
+
+            }else{
+            
+                // Set initial pose
+                mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+
+            }
+            
+
+        }else{
+
+            // Set initial pose
+            mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+
+        }
+        
+        // DEBUG Mat GetPose
+        cv::Mat pose_temp = mCurrentFrame.mTcw;
+        cv::Mat Rwc_temp = pose_temp.rowRange(0,3).colRange(0,3).t(); // Rotation information
+        cv::Mat twc_temp = -Rwc_temp*pose_temp.rowRange(0,3).col(3);  // translation information
+        vector<float> quat = ORB_SLAM2::Converter::toQuaternion(Rwc_temp);
+        std::cout << "Translation (" << twc_temp.at<float>(0, 0) << ", " << twc_temp.at<float>(0, 1) << ", " <<twc_temp.at<float>(0, 2) << ")" << std::endl;
+        std::cout << "Rotation (" << quat[0] << ", " << quat[1] << ", " << quat[2] << ", " << quat[3] << ")" << std::endl;
 
         // Create KeyFrame
         KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
@@ -1505,6 +1586,7 @@ bool Tracking::Relocalization()
 
 void Tracking::Reset()
 {
+    mPoseInitialized = false;
 
     cout << "System Reseting" << endl;
     if(mpViewer)
