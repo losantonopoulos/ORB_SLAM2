@@ -45,13 +45,16 @@ find_package(Pangolin REQUIRED)
 find_package(tf2 REQUIRED)
 
 include_directories(
+/usr/local/include/swiftnav
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
 ${PROJECT_SOURCE_DIR}/../../../include
+${SWIFTNAV_INCLUDE_DIRS}
 ${Pangolin_INCLUDE_DIRS}
 )
 
-set(LIBS 
+set(LIBS
+/usr/local/lib/libswiftnav.a
 ${OpenCV_LIBS} 
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
