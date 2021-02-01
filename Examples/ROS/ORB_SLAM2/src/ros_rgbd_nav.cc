@@ -73,7 +73,7 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sensor_msgs::ImageConstPtr& msgD, const sensor_msgs::ImuConstPtr& msgIMU);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sensor_msgs::ImageConstPtr& msgD); // const sensor_msgs::ImuConstPtr& msgIMU
 
     ORB_SLAM2::System* mpSLAM;
 };
@@ -216,21 +216,23 @@ int main(int argc, char **argv)
     }    
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::RGBD, true);
+    ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::RGBD, false);
 
     // Assign SLAM system to object
     ImageGrabber igb(&SLAM);
 
     ros::NodeHandle nh;
 
+
+
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth_registered/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Imu>   imu_sub(nh, "/sense_gimbal/fake_imu/data", 1);
+    //message_filters::Subscriber<sensor_msgs::Imu>   imu_sub(nh, "/sense_gimbal/fake_imu/data", 1);
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::Imu> sync_pol;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol; // , sensor_msgs::Imu
 
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub, imu_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,_3));
+    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub); // imu_sub
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2)); //,_3
 
     mocap_publisher = nh.advertise<geometry_msgs::PoseStamped>("/mavros/mocap/pose", 1000);
 
@@ -255,12 +257,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sensor_msgs::ImageConstPtr& msgD, const sensor_msgs::ImuConstPtr& msgIMU)
+void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sensor_msgs::ImageConstPtr& msgD)//, const sensor_msgs::ImuConstPtr& msgIMU)
 {
     
     cv::Mat initPose = cv::Mat::eye(4,4,CV_32F);
 
-    tf2::Matrix3x3 rotMat(tf2::Quaternion(msgIMU->orientation.x, msgIMU->orientation.y, msgIMU->orientation.z, msgIMU->orientation.w));  
+    //tf2::Matrix3x3 rotMat(tf2::Quaternion(msgIMU->orientation.x, msgIMU->orientation.y, msgIMU->orientation.z, msgIMU->orientation.w));
+    tf2::Matrix3x3 rotMat(tf2::Quaternion(0.0, 0.0, 0.0, 1.0));  
 
     initPose.at<float>(0, 0) = rotMat[0][0]; initPose.at<float>(0, 1) = rotMat[0][1]; initPose.at<float>(0, 2) = rotMat[0][2];
     initPose.at<float>(1, 0) = rotMat[1][0]; initPose.at<float>(1, 1) = rotMat[1][1]; initPose.at<float>(1, 2) = rotMat[1][2];
@@ -309,7 +312,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sens
 
         transformStamped.header.stamp = ros::Time::now();
         transformStamped.header.frame_id = "map";
-        transformStamped.child_frame_id  = "realsense_optical";
+        transformStamped.child_frame_id  = "realsense_optical_1";
 
         //ROS_INFO("X: %f, Y: %f, Z: %f",trans.at<float>(0, 0), trans.at<float>(0, 1), trans.at<float>(0, 2) );
 

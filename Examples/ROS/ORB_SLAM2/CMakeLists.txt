@@ -38,8 +38,18 @@ if(NOT OpenCV_FOUND)
    endif()
 endif()
 
-find_package(Boost REQUIRED system)
+find_package(catkin REQUIRED COMPONENTS
+  cv_bridge
+  image_transport
+  roscpp
+  rospy
+  tf2
+  tf2_ros
+  geometry_msgs
+  message_generation
+)
 
+find_package(Boost REQUIRED system)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(tf2 REQUIRED)

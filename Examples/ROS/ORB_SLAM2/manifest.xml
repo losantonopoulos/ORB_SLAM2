@@ -6,6 +6,11 @@
   </description>
   <author>Raul Mur-Artal</author>
   <license>GPLv3</license>
+
+  <depend package="rospy" />
+  <depend package="tf2_ros" />
+  <depend package="message_generation" />
+  <depend package="geometry_msgs" />
   <depend package="roscpp"/>
   <depend package="tf"/>
   <depend package="tf2"/>
