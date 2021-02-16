@@ -45,6 +45,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   tf2
   tf2_ros
+  mavros
+  std_msgs
+  sensor_msgs
   geometry_msgs
   message_generation
 )
@@ -111,6 +114,16 @@ src/ros_rgbd.cc
 target_link_libraries(RGBD
 ${LIBS}
 )
+
+# Node for Localization
+rosbuild_add_executable(RGBD_LOCALIZATION
+src/rgbd_localization.cc
+)
+
+target_link_libraries(RGBD_LOCALIZATION
+${LIBS}
+)
+
 
 # Node for RGB-D Navigation
 rosbuild_add_executable(RGBD_NAV
