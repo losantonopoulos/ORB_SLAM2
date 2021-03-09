@@ -77,8 +77,6 @@ tf2_ros::Buffer tfBuffer;
 tf2::Transform tf_rs_opt_drone;
 
 ros::Publisher pose_publisher; 
-std_msgs::Float64 pose_covariance[36];
-
 
 bool pose_initiallized    = false;
 bool tracker_initiallized = false;
@@ -97,53 +95,53 @@ cv::Mat initPose;
 
 void state_callback(const mavros_msgs::State::ConstPtr& msg){
 
-  bool is_armed = msg->armed;
+	bool is_armed = msg->armed;
 
-  if(is_armed && !pose_initiallized){
-    
-    geometry_msgs::TransformStamped transform_stamped_rs, transform_stamped_rs_drone;
+	if(is_armed && !pose_initiallized){
 
-    try{
+		geometry_msgs::TransformStamped transform_stamped_rs, transform_stamped_rs_drone;
 
-      usleep(2000000);
-     
-      transform_stamped_rs       = tfBuffer.lookupTransform("rs_camera_optical", "map",   ros::Time(0));
-      transform_stamped_rs_drone = tfBuffer.lookupTransform("rs_camera_optical", "drone", ros::Time(0));
+		try{
 
-      //tf2::Matrix3x3 rotMat(tf2::Quaternion(msgIMU->orientation.x, msgIMU->orientation.y, msgIMU->orientation.z, msgIMU->orientation.w));
-      tf2::Matrix3x3 rotMat(tf2::Quaternion(transform_stamped_rs.transform.rotation.x,
-                                            transform_stamped_rs.transform.rotation.y, 
-                                            transform_stamped_rs.transform.rotation.z,
-                                            transform_stamped_rs.transform.rotation.w));  
+			// Wait 2 secs for the Drone to settle	
+			usleep(2000000);
 
-      initPose.at<float>(0, 0) = rotMat[0][0]; initPose.at<float>(0, 1) = rotMat[0][1]; initPose.at<float>(0, 2) = rotMat[0][2];
-      initPose.at<float>(1, 0) = rotMat[1][0]; initPose.at<float>(1, 1) = rotMat[1][1]; initPose.at<float>(1, 2) = rotMat[1][2];
-      initPose.at<float>(2, 0) = rotMat[2][0]; initPose.at<float>(2, 1) = rotMat[2][1]; initPose.at<float>(2, 2) = rotMat[2][2];
+			transform_stamped_rs       = tfBuffer.lookupTransform("rs_camera_optical", "map",   ros::Time(0));
+			transform_stamped_rs_drone = tfBuffer.lookupTransform("rs_camera_optical", "drone", ros::Time(0));
 
-      initPose.at<float>(0, 3) = transform_stamped_rs.transform.translation.x;
-      initPose.at<float>(1, 3) = transform_stamped_rs.transform.translation.y;
-      initPose.at<float>(2, 3) = transform_stamped_rs.transform.translation.z;// - transform_stamped_drone.transform.translation.z;
+			//tf2::Matrix3x3 rotMat(tf2::Quaternion(msgIMU->orientation.x, msgIMU->orientation.y, msgIMU->orientation.z, msgIMU->orientation.w));
+			tf2::Matrix3x3 rotMat(tf2::Quaternion(transform_stamped_rs.transform.rotation.x,
+			                                    transform_stamped_rs.transform.rotation.y, 
+			                                    transform_stamped_rs.transform.rotation.z,
+			                                    transform_stamped_rs.transform.rotation.w));  
 
-      ROS_INFO("X: %f, Y: %f, Z: %f", initPose.at<float>(0, 3), initPose.at<float>(1, 3), initPose.at<float>(2, 3));
-      
-      tf_rs_opt_drone.setOrigin(tf2::Vector3(transform_stamped_rs_drone.transform.translation.x, 
-                         transform_stamped_rs_drone.transform.translation.y, 
-                         transform_stamped_rs_drone.transform.translation.z));
+			initPose.at<float>(0, 0) = rotMat[0][0]; initPose.at<float>(0, 1) = rotMat[0][1]; initPose.at<float>(0, 2) = rotMat[0][2];
+			initPose.at<float>(1, 0) = rotMat[1][0]; initPose.at<float>(1, 1) = rotMat[1][1]; initPose.at<float>(1, 2) = rotMat[1][2];
+			initPose.at<float>(2, 0) = rotMat[2][0]; initPose.at<float>(2, 1) = rotMat[2][1]; initPose.at<float>(2, 2) = rotMat[2][2];
 
-      tf_rs_opt_drone.setRotation(tf2::Quaternion(transform_stamped_rs_drone.transform.rotation.x,
-                                           transform_stamped_rs_drone.transform.rotation.y, 
-                                           transform_stamped_rs_drone.transform.rotation.z,
-                                           transform_stamped_rs_drone.transform.rotation.w));      
+			initPose.at<float>(0, 3) = transform_stamped_rs.transform.translation.x;
+			initPose.at<float>(1, 3) = transform_stamped_rs.transform.translation.y;
+			initPose.at<float>(2, 3) = transform_stamped_rs.transform.translation.z;// - transform_stamped_drone.transform.translation.z;
 
-      pose_initiallized = true;
+			ROS_INFO("X: %f, Y: %f, Z: %f", initPose.at<float>(0, 3), initPose.at<float>(1, 3), initPose.at<float>(2, 3));
 
-    } catch (tf2::TransformException &ex) {
-      ROS_WARN("%s",ex.what());
-    }
+			tf_rs_opt_drone.setOrigin(tf2::Vector3(transform_stamped_rs_drone.transform.translation.x, 
+			                 					 transform_stamped_rs_drone.transform.translation.y, 
+			                 					 transform_stamped_rs_drone.transform.translation.z));
 
-  }
+			tf_rs_opt_drone.setRotation(tf2::Quaternion(transform_stamped_rs_drone.transform.rotation.x,
+			                                   transform_stamped_rs_drone.transform.rotation.y, 
+			                                   transform_stamped_rs_drone.transform.rotation.z,
+			                                   transform_stamped_rs_drone.transform.rotation.w));      
 
-  return ;
+			pose_initiallized = true;
+
+		} catch (tf2::TransformException &ex) {
+			ROS_WARN("%s",ex.what());
+		}
+	}
+
+	return ;
 
 }
 
@@ -187,10 +185,8 @@ int main(int argc, char **argv)
     //odom_sub.registerCallback(odomCallback);
 
     // ====== Publishers ======
-    pose_publisher  = nh.advertise<geometry_msgs::PoseStamped>("/rgbd_localization/pose_with_covariance", 1);     
+    pose_publisher  = nh.advertise<geometry_msgs::PoseStamped>("/rgbd_localization/pose", 1);     
 
-    //pose_covariance.data = {0.05, 0.0,  0.0,  0.0,  0.0,  0.0, 0.0, 0.05, 0.0,  0.0,  0.0,  0.0, 0.0, 0.0,  0.06, 0.0,  0.0,  0.0, 0.0, 0.0,  0.0,  0.03, 0.0,  0.0, 0.0, 0.0,  0.0,  0.0,  0.03, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.06}; 
-        
     ros::spin();
 
     // Stop all threads
@@ -237,7 +233,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sens
     }else{
       track = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
     }
-
+    
     //ROS_INFO("Size: %d, %d", track.rows, track.cols);
 
     if (track.rows == 4 && track.cols == 4) {
@@ -280,14 +276,14 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sens
         transformStamped.transform.translation.y = estimated_trans[1];
         transformStamped.transform.translation.z = estimated_trans[2];
 
-        transformStamped.transform.rotation.x = estimated_rot.x();
-        transformStamped.transform.rotation.y = estimated_rot.y();
-        transformStamped.transform.rotation.z = estimated_rot.z();
-        transformStamped.transform.rotation.w = estimated_rot.w();
+        transformStamped.transform.rotation.x 	 = estimated_rot.x();
+        transformStamped.transform.rotation.y 	 = estimated_rot.y();
+        transformStamped.transform.rotation.z 	 = estimated_rot.z();
+        transformStamped.transform.rotation.w 	 = estimated_rot.w();
 
-        pose_stamped.pose.position.x = estimated_trans[0];
-        pose_stamped.pose.position.y = estimated_trans[1];
-        pose_stamped.pose.position.z = estimated_trans[2];
+        pose_stamped.pose.position.x 	= estimated_trans[0];
+        pose_stamped.pose.position.y 	= estimated_trans[1];
+        pose_stamped.pose.position.z 	= estimated_trans[2];
 
         pose_stamped.pose.orientation.x = estimated_rot.x();
         pose_stamped.pose.orientation.y = estimated_rot.y();
@@ -296,7 +292,5 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB, const sens
 
         br.sendTransform(transformStamped); 
         pose_publisher.publish(pose_stamped);
-    }
-
-    
+    }    
 }
