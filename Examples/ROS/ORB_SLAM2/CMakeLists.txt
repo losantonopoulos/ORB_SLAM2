@@ -58,7 +58,7 @@ find_package(Pangolin REQUIRED)
 find_package(tf2 REQUIRED)
 
 include_directories(
-/usr/local/include/swiftnav
+#/usr/local/include/swiftnav
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
 ${PROJECT_SOURCE_DIR}/../../../include
@@ -114,16 +114,6 @@ src/ros_rgbd.cc
 target_link_libraries(RGBD
 ${LIBS}
 )
-
-# Node for Localization
-rosbuild_add_executable(RGBD_LOCALIZATION
-src/rgbd_localization.cc
-)
-
-target_link_libraries(RGBD_LOCALIZATION
-${LIBS}
-)
-
 
 # Node for RGB-D Navigation
 rosbuild_add_executable(RGBD_NAV
